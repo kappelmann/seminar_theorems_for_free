@@ -1,0 +1,740 @@
+% \documentclass{article}
+\documentclass[12pt]{article}
+
+\usepackage{proof}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[final]{microtype}
+\usepackage[bottom]{footmisc}
+
+% paper margins
+\usepackage[margin=1in]{geometry}
+\pagestyle{plain}
+\usepackage{xspace}
+
+% multiple colums
+\usepackage{multicol}
+
+%Title page settings
+\usepackage[affil-it]{authblk}
+
+% Title of document
+\title{\textbf{Seminar Paper -- Theorems for Free!}}
+% Author
+\author{Kevin Kappelmann}
+\affil{Chair for Logic and Verification}
+\date{\today}
+
+
+%% Bibliography
+\usepackage[authoryear]{natbib}
+% \usepackage[%
+% backend=bibtex,
+% url=true,
+%style=alphabetic,
+% maxnames=4,
+% minnames=3,
+% maxbibnames=99,
+% giveninits,
+% uniquename=init]{biblatex}
+
+%% Graphics
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{standalone}
+\usetikzlibrary{quotes,angles,calc,arrows.meta,positioning,automata}
+\tikzset{initial text={}}
+\usepackage{tikz-3dplot}
+\usepackage{subcaption}
+
+%% Hyperlinks
+\usepackage{url}
+\definecolor{pastelblue}{RGB}{0,72,205}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+ colorlinks,
+ linktoc=page,
+ linkcolor=pastelblue,
+ citecolor=pastelblue,
+ urlcolor=pastelblue
+}
+
+\usepackage{enumitem}
+% \newlist{listnointend}{enumerate}{1}
+% \setlist[listnointend,1]{
+  % label={\arabic*},
+  % leftmargin=*,
+  % align=left,
+  % itemindent=10pt
+% }
+
+%% Coding
+\usepackage[outputdir=build]{minted}
+
+% Math packages
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{mathpartir}
+\usepackage{wasysym}
+\usepackage{stmaryrd}
+\usepackage{centernot}
+
+% Proof system
+\usepackage{amsthm}
+%% References
+\usepackage[capitalize,sort,compress,noabbrev]{cleveref}
+\crefdefaultlabelformat{#2\textup{#1}#3}
+\Crefname{thm}{Theorem}{Theorems}
+\Crefname{lem}{Lemma}{Lemmas}
+\Crefname{prop}{Proposition}{Propositions}
+\Crefname{cor}{Corollary}{Corollary}
+\Crefname{defn}{Definition}{Definitions}
+\Crefname{exmpl}{Example}{Examples}
+\Crefname{rmk}{Remark}{Remarks}
+\Crefname{propy}{Property}{Properties}
+\Crefname{claim}{Claim}{Claim}
+\Crefname{assmlisti}{Assumption}{Assumptions}
+\Crefname{invarlisti}{Invariant}{Invariants}
+
+% spacing fixes for proof system
+\makeatletter
+% \def\thm@space@setup{%
+  % \thm@preskip=\parskip \thm@postskip=0pt
+% }
+\makeatother
+\theoremstyle{plain}
+\newtheorem{thm}[equation]{Theorem}
+\newtheorem{lem}[equation]{Lemma}
+\newtheorem{prop}[equation]{Proposition}
+\newtheorem{cor}[equation]{Corollary}
+\theoremstyle{definition}
+\newtheorem{defn}[equation]{Definition}
+\newtheorem{exmpl}[equation]{Example}
+\newtheorem*{rmk}{Remark}
+\makeatletter
+
+% Custom commands
+\newcommand{\dotcup}{\mathbin{\mathaccent\cdot\cup}}
+\newcommand{\fromto}[2]{\{#1,\dotsc,#2\}}
+\newcommand{\denot}[1]{\llbracket#1\rrbracket}
+
+\newcommand{\rphi}{\varphi}
+
+\newcommand{\listt}[1]{\mathsf{List}~#1}
+\newcommand{\map}{\mathsf{map}}
+\newcommand{\haskell}[1]{\mintinline{haskell}{#1}}
+\newcommand{\vint}[1]{\mathcal{V}\denot{#1}}
+\newcommand{\tint}[1]{\mathcal{E}\denot{#1}}
+\newcommand{\wt}[1]{\mathsf{wt}_{#1}}
+\newcommand{\rels}{\mathcal{R}}
+\newcommand{\values}{Val}
+\newcommand{\bool}{\mathsf{Bool}}
+\newcommand{\nat}{\mathsf{Nat}}
+\newcommand{\zero}{\mathsf{0}}
+\newcommand{\suc}{\mathsf{succ}}
+\newcommand{\pair}{\mathsf{pair}}
+\newcommand{\true}{\mathsf{true}}
+\newcommand{\false}{\mathsf{false}}
+\newcommand{\nil}{\mathsf{nil}}
+\newcommand{\cons}{\mathsf{cons}}
+\newcommand{\length}{\mathsf{length}}
+\newcommand{\eq}{\mathsf{eq}}
+\newcommand{\cmp}{\mathsf{cmp}}
+\newcommand{\nf}[1]{#1{\downarrow}}
+\newcommand{\eqnf}{=^*}
+
+% Quotes with author
+\usepackage{xparse}
+
+\let\oldquote\quote
+\let\endoldquote\endquote
+
+\RenewDocumentEnvironment{quote}{o}
+  {\oldquote}
+  {\IfValueT{#1}{\par\nobreak
+   \hfill--- #1}\endoldquote\addvspace{\smallskipamount}}
+
+%------------------------------------------------------------------------------
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+
+\abstract{
+In his seminal paper, ``Theorems for Free!'', \citet{wadler1989theorems}
+showed the world a nifty trick:
+by just looking at the type of a polymorphic function,
+we can derive a theorem that it satisfies.
+We give a modern recount of this trick,
+derive some instructive applications,
+and provide a brief overview of notable extensions of Wadler's trick.
+}
+\tableofcontents
+
+\newpage
+\pagenumbering{arabic}
+
+\section{Introduction: Type Systems and Polymorphism}
+Type systems are lightweight mechanisms that guarantee the absence of certain programming errors
+such as nontermination, memory leaks, and corruption of data.
+In their simplest form, they provide guarantees of the shape of values dealt with by an expression.
+For example, given the following Haskell expression
+\begin{minted}{haskell}
+appTwice :: (Int -> Int) -> Int -> Int
+appTwice f x = f (f x)
+\end{minted}
+a call to \mintinline{haskell}{appTwice (+1) "bogus"} will cause a compile-time error while
+similar expressions in an untyped language often lead to unexpected results
+or even runtime crashes.
+
+A fundamental problem caused by a type theory is that meaningful programs may not be typeable.
+For example, one might wish to generalise the definition of \mintinline{haskell}{appTwice} such that it works for arbitrary types, not just integers.
+That is, calling \mintinline{haskell}{appTwice (+1) 0}
+should work just as fine as calling
+\mintinline{haskell}{appTwice (++"l") "haske"}.
+Note that this is a non-problem in untyped languages in which a definition of \mintinline{haskell}{appTwice} accepts any pair of arguments.
+
+A simple solution would be to provide a copy of
+\mintinline{haskell}{appTwice} for any type used in our program, e.g.\
+\begin{minted}{haskell}
+appTwiceInt :: (Int -> Int) -> Int -> Int
+appTwiceInt f x = f (f x)
+
+appTwiceString :: (String -> String) -> String -> String
+appTwiceString f x = f (f x)
+\end{minted}
+This obviously is not a perfect solution:
+whenever we want to apply our function to another type of arguments,
+we need to write a new function for this type,
+violating the \emph{abstraction principle} of software engineering:
+\begin{quote}[\citet{typesprogramming}]
+Each significant piece of functionality in a program should be implemented in just one place in the source code. Where similar functions are carried out by distinct pieces of code, it is generally beneficial to combine them into one by abstracting out the varying parts.
+\end{quote}
+In the example above, the only varying part are the functions' type signatures.
+So according to the abstraction principle, we should aim to abstract away the concrete types of the signatures and combine them into one common signature.
+Thankfully, this job has already been done for us.
+The solution is known as \emph{parametric polymorphism}\footnote{Parametric polymorphism stands in contrast to \emph{ad-hoc polymorphism}. In this paper, we are only concerned with the former and will simply refer to it as \emph{polymorphism}.}.
+
+Just like functions allow us to abstract over terms by using term variables,
+parametric polymorphism allows us to abstract over types by using type variables.
+In Haskell, the parametric version of \mintinline{haskell}{appTwice} can be defined as
+\begin{minted}{haskell}
+appTwice :: (a -> a) -> a -> a
+appTwice f x = f (f x)
+\end{minted}
+where the type variable \mintinline{text}{a} is implicitly universally quantified.
+Parametric polymorphism allows us to respect the abstraction principle while still being protected from unwanted calls such as \mintinline{haskell}{appTwice (+1) "bogus"}.
+But this is not the end of the story;
+parametric polymorphism comes with another twist:
+
+Polymorphic functions are defined once and for all for any type and as such must work uniformly on values of any type:
+if we know that \mintinline{haskell}{appTwice (+1) 0} applies \mintinline{haskell}{(+1)} twice to \mintinline{haskell}{0}, then we also know that \mintinline{haskell}{appTwice (++"l") "haske"} applies \mintinline{haskell}{(++"l")} twice to \mintinline{haskell}{"haske"}.
+
+Indeed, as shown by \citet{Reynolds1983TypesAA} and \citet{wadler1989theorems}, from the type of a polymorphic function,
+we can derive a theorem that it satisfies.
+Moreover, every function of the same type satisfies the same theorem.
+Polymorphic functions provide as \emph{theorems for free}.
+In this paper, we show you how to prove that such theorems exist and how to get your hands on them, all for free.
+
+\section{Historic Context}
+
+``Theorems for Free'' is an expression and concept introduced by \citet{wadler1989theorems}.
+His work is largely based on Reynold's abstraction theorem for the polymorphic lambda calculus.
+\citet{Reynolds1983TypesAA} showed how terms evaluated in related environments yield related values for both the simply-typed as well as the polymorphic lambda calculus.
+The latter proof, however, rested on the wrong conjecture of a set-theoretic model for the polymorphic lambda calculus, later disproved by Reynolds himself \citep{polymorphismnotset}.
+
+Wadler updated Reynolds's abstraction theorem and fixed the proof for the polymorphic case.
+Moreover, he took Reynold's insights,
+which were primarily concerned about representation independence and properties of models of the polymorphic lambda calculus,
+and reformulated them to systematically derive theorems about parametric functions.
+
+Following Wadler's initiative, a variety of
+extensions for stronger calculi and type systems were proven,
+commonly referred to as \emph{parametricity theorems}.
+We shall not be concerned with those extensions as part of this paper but will
+provide an overview for further reading in \cref{sec:beyond} for the interested reader.
+
+\section{Technical Development}
+
+In this section, we first introduce the polymorphic lambda calculus and then give an instructive account of how to set up the logical relations needed to prove the Parametricity Theorem.
+We assume some basic experience with lambda calculi and hence keep the introduction brief.
+We do not directly follow the development of \citet{wadler1989theorems}
+but a more modern recount by \citet{skorstengaard2019introduction} based on logical relations.
+
+\subsection{The Polymorphic Lambda Calculus}
+
+The polymorphic lambda calculus
+-- also known as System F --
+is a typed model of computation introduced by \citet{girard1972interpretation} and \citet{reynolds1974towards}.
+It is an extension of the simply typed lambda calculus that allows for universal quantification over types.
+
+Let us use $\alpha,\alpha_1,\dots$ to denote type variables and $\tau,\tau_1,\dots$ to denote types.
+\makebox{System F's} type syntax can then be defined as follows:
+\begin{equation*}
+ \tau \Coloneqq  \alpha \mid \tau \to \tau \mid \forall \alpha.\ \tau
+\end{equation*}
+In principle, the calculus can be extended with base types like booleans and natural numbers,
+but as is well known, they can also be encoded using just arrow and universal types (cf \cref{sec:boolpair}).
+
+We use $x,x_1,\dots$ to denote term variables and $t,t_1,\dots$ to denote terms.
+The term (or expression) syntax is then defined as
+\begin{equation*}
+t \Coloneqq x \mid \lambda x : \tau.\ t \mid t\, t \mid \Lambda \alpha.\ t \mid  t\,[\tau]
+\end{equation*}
+and the subset of values, denoted by $\values$, as
+\begin{equation*}
+v \Coloneqq x\mid \lambda x : \tau.\ t \mid \Lambda \alpha.\ t
+\end{equation*}
+In all that follows, we consider terms and types that differ only in the names of bound variables as equal, i.e.\ they are compared modulo $\alpha$-equivalence.
+A term with free variables is called \emph{open} and otherwise \emph{closed}.
+The grammar of contexts is now defined as follows:
+\begin{equation*}
+\Gamma \Coloneqq \bullet \mid \Gamma, x : \tau \mid \alpha
+\end{equation*}
+We assume that no variable is defined twice in $\Gamma$ and write $\Gamma(x) = \tau$ if $x : \tau$ is declared in $\Gamma$ and $\alpha\in\Gamma$ if $\alpha$ is declared in $\Gamma$.
+The (call-by-name) evaluation rules are defined as follows:
+\begin{align*}
+\infer[\text{E-App1}]{t_1\,t_2\to t_1'\,t_2}{t_1\to t_1'}&&
+\infer[\text{E-AppAbs}]{(\lambda x : \tau.\ t_1)\, t_2\to t_1[t_2/x]}{}\\
+\infer[\text{E-TApp1}]{t\,[\tau]\to t'\,[\tau]}{t\to t'}&&
+\infer[\text{E-TAppAbs}]{(\Lambda \alpha.\ t)\, [\tau]\to t[\tau/\alpha]}{}
+\end{align*}
+We write $\to^*$ for the reflexive, transitive closure of $\to$
+and $\eqnf$ for the symmetric closure of $\to^*$.
+Given a term $t$, we write $\nf{t}$ to denote the normal form of $t$ with respect to $\to$.
+Note that this normal form is unique and always exists
+since System F is strongly normalising, as originally shown by Girard
+(see, for example, \citep{girard1989proofs}).
+The evaluation rules are of no great importance for this work
+but added for the sake of completeness:
+any other sensible reduction strategy would work just as fine.
+The well-formed check on types is defined as follows:
+\begin{align*}
+&\infer[\text{WF-Var}]{\Gamma\vdash\alpha}{\alpha\in\Gamma}&&
+  \infer[\text{WF-$\forall$}]{\Gamma\vdash\forall\alpha.\,\tau}{\Gamma,\alpha\vdash\tau}&&
+  \infer[\text{WF-${\to}$}]{\Gamma\vdash\tau_1\to\tau_2}{\Gamma\vdash\tau_1&\Gamma\vdash\tau_2}
+\end{align*}
+Finally, the typing rules are given as follows:
+\begin{align*}
+&\infer[\text{T-Var}]{\Gamma \vdash x : \tau}{\Gamma(x) = \tau}&&
+\infer[\text{T-Abs}]{\Gamma \vdash \lambda x : \tau_1.\ t : \tau_1 \to \tau_2}{\Gamma, x : \tau_1 \vdash t : \tau_2&\Gamma\vdash\tau_1}\\
+&\infer[\text{T-App}]{\Gamma \vdash t_1\,t_2 : \tau}{\Gamma \vdash t_1 : \tau_2 \to \tau & \Gamma \vdash t_2 : \tau_2}&&
+\infer[\text{T-TAbs}]{\Gamma \vdash \Lambda \alpha.\ t : \forall \alpha.\ \tau}{\Gamma, \alpha \vdash t : \tau}\\
+&\infer[\text{T-TApp}]{\Gamma \vdash t\,[\tau'] : \tau[\tau'/\alpha]}{\Gamma\vdash t : \forall \alpha.\ \tau&\Gamma\vdash\tau'}
+\end{align*}
+We will write $\wt{\tau}(t_1,\dotsc,t_n)$ to express that all
+$t_i$ are closed and well-typed with type $\tau$,
+that is $\bullet \vdash t_i : \tau$ for $1\leq i\leq n$.
+Moreover, we write $t[t_1/x_1,\dotsc,t_n/x_n]$
+for the term where all occurrences of $x_i$ in $t$ are replaced by $t_i$ (and similarly for type substitutions)
+and $\rho[t/x]$ for the substitution defined as $\rho[t/x](x)=t$ and $\rho[t/x](y)=\rho(y)$ for $x\neq y$.
+
+\subsection{Types as Relations}\label{sec:typesasrels}
+
+It is natural to interpret a type $\tau$ as a set $\denot{\tau}$ containing all values of type $\tau$, e.g. $\denot{\mintinline{haskell}{Bool}}=\{\mintinline{haskell}{True,False}\}$ in Haskell\footnote{ignoring that \haskell{undefined :: Bool} for a moment}.
+In that interpretation, a judgement $t : \tau$ simply translates to set membership $t\in\denot{\tau}$.
+The key idea to extract free theorems is to give up on that idea and to instead interpret a type as a relation that relates terms of the given type and whose membership is preserved under eliminating forms.
+The very slogan will be ``related terms lead to related results''.
+Here are some instructing examples:
+\begin{itemize}
+  \item Base types are interpreted as their identity relation,
+    for example\\
+    $\denot{\haskell{Bool}}=\{(\haskell{True,True}),(\haskell{False,False})\}$.
+  \item Two pairs are related if their components are related, that is\\ $\bigl((t_1,t_2),(t_1',t_2')\bigr)\in\denot{(\tau_1,\tau_2)} \iff (t_1,t_1')\in\denot{\tau_1}\land (t_2,t_2')\in\denot{\tau_2}$.
+  \item Two lists are related if they have the same length and their elements are related, i.e.\ $\bigl([t_1,\dotsc,t_n],[t_1',\dotsc,t_{n'}']\bigr)\in \denot{\listt{\tau}} \iff n = n' \land \forall i\in\fromto{1}{n}.\ (t_i,t_i')\in \denot{\tau}$.
+  \item Two functions are related if they map related arguments to related results, that is $(f,f')\in \denot{\tau_1 \to \tau_2} \iff \forall (t,t')\in \denot{\tau_1}.~\bigl(f\, t, f'\, t'\bigr)\in\denot{\tau_2}$.
+\end{itemize}
+Some of these examples will not just be true by definition but rather be a consequence of
+the setup of our logical relation in the next section.
+We will derive some of them in \cref{sec:boolpair}.
+
+\subsection{Logical Relations and the Parametricity Theorem}\label{sec:logicalrel}
+
+In order to give a precise definition of our notion of relatedness for System-F,
+we will make us of a technique called \emph{logical relations}.
+The term \emph{logical relation} originates from \citet{plotkin1973lambda} but similar ideas can be traced back to \citet{tait1967intensional} and his proof of the strong normalisation of the simply typed lambda calculus.
+Logical relations proved to be a strong tool in programming language theory.
+For example, they can be used to prove strong normalisation, type safety, the equivalence of programs, and, to our great interest, free theorems for various lambda calculi.
+
+Broadly speaking, a logical relation $R\denot{\tau}$ is an inductive family of relations indexed by types.
+In general, a logical relation can be constructed with respect to a suitable interpretation (model) of the calculus in question.
+In our case, we can stick to the simple case where we interpret terms as their syntactic representation.
+If we then want to prove that the terms of our language satisfy some $n$-ary property $P$,
+we usually construct $R\denot{\tau}$ in a way such that:
+\begin{enumerate}
+  \item If $R\denot{\tau}\bigl(t_1,\dotsc,t_n\bigr)$ then
+  \begin{enumerate}
+    \item $\wt{\tau}(t_1,\dotsc,t_n)$
+    \item $P\bigl(t_1,\dotsc,t_n\bigr)$
+  \end{enumerate}
+  \item The conditions of the relation are preserved by eliminating forms.
+\end{enumerate}
+It then suffices to prove that
+all well-typed terms of our language satisfy the logical relation
+to obtain our proof of property $P$.
+Needless to say, this is just a vague recipe that needs further refinement depending on the
+property $P$ at hand.
+
+In our case, we want to prove a property of relatedness as exemplified in the previous section.
+Indeed, our goal will be to show that all terms $t$ are related to themselves.
+Now that sounds rather dull at first glance, but the magic kicks in once we think about how to relate polymorphic terms -- the reader will have to grant us a credit of trust at this point.
+
+For ease of exposition, we split our logical relation into two parts:
+\begin{enumerate}
+\item a logical relation $\vint{\tau}$ on values that encodes the notion of relatedness that we want to preserve, and
+\item a logical relation $\tint{\tau}$ on general terms that reduces the relatedness property to the simpler case of values.
+\end{enumerate}
+Pushing aside the existence of type variables for a moment,
+let us begin with the simple case of function types:
+As mentioned in the previous section,
+two functions should be related if they map related arguments to related results.
+Following our recipe, a first approximate definition could thus look as follows:
+\begin{align*}
+  \vint{\tau_1\to\tau_2}\coloneqq
+  \Bigl\{(\lambda x : \tau_1.\ t_1, \lambda x : \tau_1.\ t_2) \mid\
+  &\wt{\tau_1\to\tau_2}(\lambda x : \tau_1.\ t_1, \lambda x : \tau_1.\ t_2)\ \land\\
+  &\forall (v_1,v_2)\in\vint{\tau_1}.\ \bigl(t_1[v_1/x],t_2[v_2/x]\bigr)\in\tint{\tau_2} \Bigr\}
+\end{align*}
+In words: two lambda-abstractions are related if they are well-typed on the same type
+and the relatedness property is maintained on the eliminating form of the terms, that is function application.
+Since the terms $t_1[v_1/x]$ and $t_2[v_2/x]$ are not necessarily values,
+we have to push the check of the latter to $\tint{\tau_2}$.
+
+Similarly, we have to deal with type abstractions.
+Again, we can take our recipe and to get a first, approximate definition:
+\begin{align*}
+  \vint{\forall \alpha.\ \tau}\coloneqq
+  \Bigl\{(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2) \mid\
+  &\wt{\forall \alpha.\, \tau}(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2)\ \land\\
+  &\forall \tau_1,\tau_2.\ \bigl(t_1[\tau_1/\alpha],t_2[\tau_2/\alpha]\bigr)\in\tint{\tau[?/\alpha]} \Bigr\},
+\end{align*}
+where $\bullet\vdash\tau_1$ and $\bullet\vdash\tau_2$ (we will silently make this assumption in all upcoming definitions).
+But here we face a problem: there is not a single type the terms $t_1[\tau_1/\alpha]$ and $t_2[\tau_2/\alpha]$ can be related under, leaving a puzzling $?$ in our definition.
+The idea now is to not substitute any type for $\alpha$ in $\tau$ at all;
+instead, we keep track of the chosen types $\tau_1,\tau_2$ in an explicit
+substitution $\rho$ that will then be used to interpret the free type variable $\alpha$ in $\tau$ when needed.
+The substitution thus becomes an additional parameter of the entire logical relation.
+We hence update our definition as follows:
+\begin{align*}
+  \vint{\forall \alpha.\ \tau}_\rho\coloneqq
+  \Bigl\{(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2) \mid\
+  &\wt{\forall \alpha.\, \rho(\tau)}(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2)\ \land\\
+  &\forall \tau_1,\tau_2.\ \bigl(t_1[\tau_1/\alpha],t_2[\tau_2/\alpha]\bigr)\in\tint{\tau}_{\rho[\alpha\mapsto(\tau_1,\tau_2)]} \Bigr\},
+\end{align*}
+where $\wt{\rho(\tau)}(t_1,t_2)\coloneqq \wt{\rho_1(\tau)}(t_1)\land\wt{\rho_2(\tau)}(t_2)$
+with $\rho_i(\alpha)\coloneqq \tau_i$ if $\rho(\alpha)=(\tau_1,\tau_2)$.
+This leaves us with the definition of the value interpretation for type variables $\vint{\alpha}_\rho$.
+Here is a first approximation:
+\begin{equation*}
+\vint{\alpha}_\rho\coloneqq
+  \bigl\{(v_1,v_2) \mid
+  \wt{\rho(\alpha)}(v_1,v_2)\ \land\ ? \bigr\}
+\end{equation*}
+Once again, we run into a problem: we know $\rho(\alpha)=(\tau_1,\tau_2)$ but $\tau_1$ might be different from $\tau_2$.
+So the question becomes: how should we relate values of possibly different types?
+Intuitively, it seems like there should not be any strong restriction on the relation of the values:
+A polymorphic definition is independent of the concrete types being chosen at runtime and
+hence works uniformly on values of any type.
+As such,
+whenever we pick two types $\tau_1,\tau_2$ to substitute for $\alpha$ in a polymorphic definition,
+it seems like we should be able to pick any relation on $\tau_1$ and $\tau_2$ and
+that relation should be preserved by the polymorphic definition.
+This idea leads us to our final updated definition for type abstractions:
+\begin{align*}
+  \vint{\forall \alpha.\ \tau}_\rho\coloneqq
+  \Bigl\{(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2) \mid\
+  &\wt{\forall \alpha.\, \rho(\tau)}(\Lambda \alpha.\ t_1, \Lambda \alpha.\ t_2)\ \land
+  \forall \tau_1,\tau_2,R\in\rels(\tau_1,\tau_2).\ \\
+  &\bigl(t_1[\tau_1/\alpha],t_2[\tau_2/\alpha]\bigr)\in\tint{\tau}_{\rho[\alpha\mapsto(\tau_1,\tau_2,R)]} \Bigr\},
+\end{align*}
+where any $R$ is just a relation of closed, well-typed values, that is
+\begin{equation*}
+\rels(\tau_1,\tau_2)\coloneqq\bigl\{R\in\mathcal{P}(\values\times \values)\mid \forall(v_1,v_2)\in R.\ \wt{\tau_1}(v_1)\land\wt{\tau_2}(v_2)\bigr\}.
+\end{equation*}
+As we will see in \cref{sec:exmpls},
+even though two polymorphic terms should be related for any choice of $R$,
+not all choices will give us useful theorems.
+Indeed, the key to derive meaningful theorems will primarily consist of finding a
+good choice for $R$.
+
+We are now able to finish our value interpretation for type variables:
+\begin{equation*}
+  \vint{\alpha}_\rho\coloneqq
+  \bigl\{(v_1,v_2) \in R \mid
+  \wt{\rho(\alpha)}(v_1,v_2) \land \rho(\alpha)=(\tau_1,\tau_2,R) \bigr\}
+\end{equation*}
+Now we can update our definition on function types to account for all of above changes:
+\begin{align*}
+  \vint{\tau_1\to\tau_2}_\rho\coloneqq
+  \Bigl\{&\bigl(\lambda x : \rho(\tau_1).\ t_1, \lambda x : \rho(\tau_1).\ t_2\bigr) \mid\
+  \wt{\rho(\tau_1)\to\rho(\tau_2)}\bigl(\lambda x : \rho(\tau_1).\ t_1, \lambda x : \rho(\tau_1).\ t_2\bigr)\\
+  & \land \forall (v_1,v_2)\in\vint{\tau_1}_\rho.\ \bigl(t_1[v_1/x],t_2[v_2/x]\bigr)\in\tint{\tau_2}_\rho \Bigr\}
+\end{align*}
+Having finished our interpretation of values, we can easily extend it to terms:
+\begin{align*}
+  \tint{\tau}_\rho\coloneqq\bigl\{(t_1,t_2)\mid
+  \wt{\rho(\tau)}(t_1,t_2)\land (\nf{t_1},\nf{t_2})\in\vint{\tau}_\rho\bigr\}
+\end{align*}
+So all that $\tint{\tau}$ does is normalising the terms and delegating the check to $\vint{\tau}$.
+Note that the logical relations $\vint{\cdot}$ and $\tint{\cdot}$ are
+mutually dependent, and hence it is worth to mention
+that they are well-founded:
+every definition of $\tint{\tau}$ reduces to a check in $\vint{\tau}$,
+which in turn might rely on a check of $\tint{\tau'}$ for a syntactically
+smaller type of $\tau$.
+So the relations are indeed well-founded on the syntactic complexity of types.
+
+Following our recipe, we now wish to show that all well-typed terms of our language satisfy the logical relation.
+Of course, not all terms of the same type are related to each other,
+but any term $t$ should at least be related to itself.
+So what we could prove is that whenever $\wt{\tau}(t)$ then $(t,t)\in\tint{\tau}$.
+That might seem a bit mundane, but remember that for two related polymorphic terms,
+the definition of $\vint{\forall \alpha.\, \tau}$ tells us that
+we can substitute two different types for $\alpha$ and the terms stay related.
+Repeatedly substituting different types in a given $t$ will then give us two
+quite different programs, which are still related.
+
+Now as for the proof, it seems natural to proceed by induction on the typing derivation of $t$.
+However note that as part of the derivation, the typing context will change and we will have to deal with open terms.
+So we actually need to prove a more general property that deals with contexts and uses them to close off open terms.
+For this, we give an interpretation of contexts:
+\begin{align*}
+  \denot{\bullet}&\coloneqq \{\emptyset\} \\
+  \denot{\Gamma, \alpha}&\coloneqq \bigl\{\rho[\alpha\mapsto(\tau_1,\tau_2,R)]\mid \rho\in\denot{\Gamma}\land \bullet\vdash \tau_1\land \bullet\vdash \tau_2\land R\in\rels(\tau_1,\tau_2)\bigr\} \\
+  \denot{\Gamma, x : \tau}&\coloneqq \bigl\{\rho[x\mapsto(v_1,v_2)]\mid \rho\in\denot{\Gamma}\land (v_1,v_2)\in\vint{\tau}_\rho\bigr\}
+\end{align*}
+We can now define our wanted notion of relatedness
+\begin{equation*}
+  (\Gamma \vdash t_1\approx t_2 : \tau) \coloneqq\forall\rho\in\denot{\Gamma}.\ \bigl(\rho_1(t_1),\rho_2(t_2)\bigr)\in\tint{\tau}_\rho
+\end{equation*}
+and finally state the main theorem:
+\begin{thm}[Parametricity Theorem]\label{thm:fundprop}
+  If $\Gamma\vdash t : \tau$ then
+  $\Gamma \vdash t\approx t : \tau$.
+\end{thm}
+The proof of the theorem is by induction on the typing derivation of $t$.
+We omit the details -- they can be found, for example, in \citep{skorstengaard2019introduction}.
+
+We will simply write $t_1\approx t_2$ for $\bullet \vdash t_1\approx t_2 : \tau$ if $\tau$ is clear from the context.
+Theorems that follow by instantiating the Parametricity Theorem are called ``free theorems''.
+Let us explore some applications of the theorem in the next section.
+
+\section{Examples of Free Theorems}\label{sec:exmpls}
+
+\subsection{Booleans, Pairs, and Natural Numbers}\label{sec:boolpair}
+
+In \cref{sec:typesasrels} we gave some instructive examples of the notion of relatedness for basic inductive types such as booleans as well as pairs and lists.
+Our calculus does not include any of these types as primitives, but it is simple to
+construct them using our existing tools.
+We will call such encodings \emph{functional}.
+
+Let us begin with the simple case of booleans:
+we can define its type as $\bool \coloneqq \forall \alpha.\, \alpha\to\alpha\to\alpha$
+and its two constructors $\true\coloneqq \Lambda \alpha.\, \lambda x : \alpha.\, \lambda y : \alpha.\, x$ and
+$\false\coloneqq \Lambda \alpha.\, \lambda x : \alpha.\,\lambda  y : \alpha.\, y$.
+\begin{exmpl}[$\true\not\approx\false$]
+Let us show that $\true\not\approx\false$.
+Pick $\tau_1=\tau_2=\bool,v_1=\true,v_2=\false$ and $R=\{(v_1,v_1),(v_2,v_2)\}$.
+Then $(v_1,v_1),(v_2,v_2)\in R,\allowbreak\true\, [\tau_1]\,v_1\, v_2 \to^* v_1$, $\false\, [\tau_2]\,v_1\,v_2 \to^* v_2$ but $(v_1,v_2)\notin R$.
+Hence $\bigl(\nf{(\true \,[\tau_1]\,v_1\,v_2)}, \nf{(\false \,[\tau_2]\,v_1\,v_2)}\bigr)\notin R$ and $\true\not\approx\false$.
+\end{exmpl}
+
+The Parametricity Theorem is often used to show that two terms $t_1$ and $t_2$ ``behave the same'',
+meaning that the terms are indistinguishable when replaced by each other in any program context.
+The terms $t_1$ and $t_2$ are then said to be \emph{observationally equivalent}.
+
+\begin{exmpl}[terms of type $\bool$]\label{exmpl:boolterms}
+Let us explore how many observationally different closed terms of type $\bool$ there are.
+For this, assume we are given an arbitrary value $t : \bool$ (we could also pick an arbitrary term and normalise it first).
+We want to explore the behaviour of $t$, so assume we are given some arbitrary $\tau$ and $v_1,v_2 : \tau$.
+What are the possible results of $t \,[\tau]\,v_1\,v_2$?
+
+By the Parametricity Theorem, we have $t\approx t$.
+So we can pick $\tau'=\bool,v_1'=\true,\allowbreak v_2'=\false,R=\{(v_1',v_1),(v_2',v_2)\}$
+and obtain $\bigl(t \,[\tau']\,v_1'\,v_2',t \,[\tau]\,v_1\,v_2\bigr)\in\tint{\alpha}_{[\alpha\mapsto(\tau',\tau,R)]}$.
+So there is $v' : \tau'$ and $v : \tau$ with $t \,[\tau']\,v_1'\,v_2'\to^*v'$ and $t \,[\tau]\,v_1\,v_2\to^*v$ and $(v',v)\in R$.
+Thus either $v'=v_1'=\true$ or $v'=v_2'=\false$.
+In case of the former, we get $v=v_1$ and thus $t \,[\tau]\,v_1\,v_2\to^*v_1$.
+In case of the latter, we get $v=v_2$ and thus $t \,[\tau]\,v_1\,v_2\to^*v_2$.
+Now $\tau,v_1,v_2$ were chosen arbitrarily and $t\,[\tau']\,v_1'\,v_2'\to^*v'$
+holds independently of that choice.
+Hence $\forall \tau,v_1,v_2.\, t\,[\tau]\,v_1\,v_2\to^*v_1$ or $\forall \tau,v_1,v_2.\, t\,[\tau]\,v_1\,v_2\to^*v_2$;
+in other words, $t$ is observationally equivalent to either $\true$ or $\false$.
+\end{exmpl}
+\begin{exmpl}[pairs]
+In a similar spirit, we can define the type of pairs for fixed types $\tau_1,\tau_2$ as $(\tau_1,\tau_2)\coloneqq \forall \alpha.\, (\tau_1\to\tau_2\to\alpha)\to\alpha$
+and the constructor
+\begin{equation*}
+\pair \coloneqq \Lambda \alpha_1.\,\Lambda \alpha_2.\, \lambda x_1 : \alpha_1.\,\lambda x_2 : \alpha_2.\, \Lambda \alpha_3.\,\lambda f : \alpha_1\to\alpha_2\to\alpha_3.\, f\,x_1\,x_2.
+\end{equation*}
+Note that $\pair \,[\tau_1]\,[\tau_2]\,v_1\,v_2 : (\tau_1,\tau_2)$ for any $v_1 : \tau_1$ and $v_2 : \tau_2$.
+Now by the Parametricity Theorem, for any $\tau_1,\tau_1',\tau_2,\tau_2',\allowbreak v_1,v_1',v_2,v_2',R_1,R_2$,
+we have
+\begin{equation*}
+\bigl(\pair \,[\tau_1]\,[\tau_2]\,v_1\,v_2,\pair \,[\tau_1']\,[\tau_2']\,v_1'\,v_2'\bigr)\in\tint{(\alpha_1,\alpha_2)}_{[\alpha_1\mapsto(\tau_1,\tau_1',R_1),\alpha\mapsto(\tau_2,\tau_2',R_2)]}
+\end{equation*}
+whenever $(v_1,v_1')\in R_1$ and $(v_2,v_2')\in R_2$.
+In other words: pairs are related whenever their components are related.
+\end{exmpl}
+\begin{exmpl}[natural numbers]
+We can encode natural numbers in our system using church numerals.
+The type of natural numbers can be defined as $\nat\coloneqq \forall \alpha.\, (\alpha\to\alpha)\to\alpha\to\alpha$,
+the number zero as $\zero\coloneqq \Lambda \alpha.\,\lambda s : \alpha\to\alpha.\,\lambda z : \alpha.\, z$
+and the successor function as
+$\suc\coloneqq \lambda n : \nat.\,\Lambda \alpha.\,\lambda s : \alpha\to\alpha.\,\lambda z : \alpha.\, s\ (n\, [\alpha]\, s\, z)$.
+Let us define $f^0\, x\coloneqq x$ and $f^{n+1}\coloneqq f\, (f^n x)$.
+The $n$-th Church numeral can then be defined by $\mathsf{n}\coloneqq \suc^n\, 0$.
+Note that the type of \haskell{appTwice} from our introduction actually has type $\nat$!
+Indeed, in a similar style to \cref{exmpl:boolterms}, we can derive a free theorem for any term of that type:
+
+Assume we are given some value $t : \nat$, a type $\tau$, and values $s : \tau\to\tau$ and $z : \tau$.
+Pick $\tau'=\nat,s'=\suc,z'=\zero$, and $R=\bigl\{(\nf{\mathsf{n}},\nf{(s^n\, z)})\mid n\in\mathbb{N}\bigr\}$.
+First note that $(\suc, s)\in\vint{\alpha\to\alpha}_{[\alpha\mapsto(\tau',\tau,R)]}$:
+If $(v_1,v_2)\in\vint{\alpha}_{[\alpha\mapsto(\tau',\tau,R)]}$
+then $(v_1,v_2)=\bigl(\nf{\mathsf{n}},\nf{(s^n\, z)}\bigr)$ for some $n$.
+Thus $(\suc\,v_1,s\,v_2)\eqnf\bigl(\nf{(\mathsf{n+1})},\nf{(s^{n+1}\, z)}\bigr)\in R$.
+
+Hence, we get $\bigl(t\,[\nat]\,\suc\,\zero,t\,[\tau]\,s\,z\bigr)\in\tint{\alpha}_{[\alpha\mapsto(\tau',\tau,R)]}$ by the Parametricity Theorem.
+So there is $v' : \nat$ and $v : \tau$ such that
+$t\,[\tau']\,\suc\,\zero\to^*v'$ and $t\,[\tau]\,s\,z\to^*v$ and $(v',v)\in R$.
+Hence $v \eqnf s^n\, z$ where $n$ is determined by $t\,[\nat]\,\suc\,\zero\to^*v'\eqnf\mathsf{n}$.
+Putting it all together, we discovered that $t$ is observationally equivalent to the $n$-th Church numeral -- in the case of \haskell{appTwice}, the Church numeral $\mathsf{2}$.
+\end{exmpl}
+
+Instead of relating the functional encoding of natural numbers with
+terms of type $\nat$,
+we could also add the natural numbers as a primitive to our calculus and then,
+by the same process, show that the primitive natural numbers are in an isomorphic
+relation to their functional encodings of type $\nat$.
+This result indeed generalises to all functional encodings of inductive types
+as shown by \citet{10.1007/BFb0037118}.
+
+\subsection{Lists}
+Just as in the previous section, we could encode the type of lists for a fixed type $\tau$
+in our calculus by using the type $\listt{\tau}\coloneqq \forall \alpha.\, (\alpha\to\tau\to\tau)\to\tau\to\tau$
+defining suitable $\nil$ and $\cons$ constructors, defining the well-known $\map$ function, etc.
+As mentioned in \cref{sec:typesasrels},
+it would then turn out that two lists are related if they have the same length and their elements are related.
+More formally:
+\begin{equation*}
+\bigl([v_1,\dotsc,v_n],[v_1',\dotsc,v_{n'}']\bigr)\in \vint{\listt{\alpha}}_\rho \iff n = n' \land \forall i\in\fromto{1}{n}.\ (v_i,v_i')\in \vint{\alpha}_\rho
+\end{equation*}
+However, for the sake of brevity, we will not explicitly derive this but simply assume that we are given suitable definitions for the terms of interest.
+The following examples are taken from \citet{wadler1989theorems}.
+\begin{exmpl}[rearranging lists]
+Assume we are given a value
+$t : \forall \alpha.\, \listt{\alpha}\to\listt{\alpha}$.
+Intuitively, $t$ can do nothing but re-arrange, copy, and delete elements from a given input list.
+In particular, we would expect the following theorem to hold:
+\begin{equation*}
+  \forall \alpha,\alpha',(f : \alpha\to\alpha'),(xs : \listt{\alpha}).\, \map\,f\,(t\,[\alpha]\,xs)\eqnf t\,[\alpha']\,(\map\,f\,xs)
+\end{equation*}
+Well lucky us: this is indeed a free theorem!
+Pick any $\tau,\tau',f : \tau\to\tau'$.
+By the Parametricity Theorem, we have $t\approx t$.
+So for any $R$ and $(xs,xs')\in\vint{\listt{\alpha}}_{[\alpha\mapsto(\tau,\tau',R)]}$, we have $(t\,[\tau]\, xs,t\,[\tau']\, xs')\in\tint{\listt{\alpha}}_{[\alpha\mapsto(\tau,\tau',R)]}$.
+Note that if we specialise $R=\bigl\{(v,\nf{(f\, v)})\mid \wt{\tau}(v)\bigr\}$
+to be the extensional representation of $f\,[\tau]\,[\tau']$,
+the property $(xs,xs')\in\vint{\listt{\alpha}}_{[\alpha\mapsto(\tau,\tau',R)]}$
+simply translates to $xs'\eqnf \map\, f\, xs$.
+And similarly, the property
+$\bigl(t\,[\tau]\, xs,t\,[\tau']\, xs'\bigr)\in\tint{\listt{\alpha}}_{[\alpha\mapsto(\tau,\tau',R)]}$
+translates to
+$t\, [\tau']\,xs' \eqnf \map\,f\,(t\,[\tau]\, xs)$.
+Putting it together, we get $t\, [\tau']\,(\map\, f\, xs) \eqnf \map\,f\,(t\,[\tau]\, xs)$,
+which is what we wanted to show.
+\end{exmpl}
+
+\begin{exmpl}[sorting lists]
+Assume we have a value $s : \forall\alpha.\, (\alpha\to\alpha\to\bool)\to\listt{\alpha}\to\listt{\alpha}$
+(for example, Haskell's \haskell{sortBy} and \haskell{nubBy} functions).
+By the Parametricity Theorem, we can pick
+$\tau,\tau',R,\cmp,\cmp'$
+such that
+$\bigl(s\,[\tau]\,\cmp,s\,[\tau']\,\cmp'\bigr)\in\tint{\listt{\alpha}\to\listt{\alpha}}_{[\alpha\mapsto(\tau',\tau',R)]}$.
+Now similarly to the previous example,
+pick an arbitrary $f : \tau\to\tau'$
+and let $R=\bigl\{(v,\nf{(f\, v)})\mid \wt{\tau}(v)\bigr\}$ be the representation of $f$.
+Then, for any list $xs$, we get
+$\map\,f\,(s\,[\tau]\,\cmp\,xs)\eqnf s\,[\tau']\,\cmp'\,(\map\,f\,xs)$ whenever
+$(\cmp,\cmp')\in\vint{\alpha\to\alpha\to\bool}_{[\alpha\mapsto(\tau,\tau',R)]}$,
+which in turn unfolds to $\cmp\,t_1\,t_2\eqnf\cmp'\,(f\,t_1)\,(f\,t_2)$
+for all $t_1 : \tau,t_2 : \tau$.
+In other words: $\map$ commutes with $s$ if the mapped function is order-preserving.
+\end{exmpl}
+
+\subsection{Indefinability of \mintinline{text}{undefined} and Parametric Equality}\label{sec:noundef}
+
+Free theorems do not necessarily need to have a positive character but can also provide useful negative results:
+
+\begin{exmpl}
+Note that in Haskell \haskell{undefined :: forall a. a}.
+Can we define such a term in System F?
+Assume there is a value $u : \forall \alpha.\, \alpha$.
+Pick any $\tau,\tau'$ and set $R=\emptyset$.
+Then by the Parametricity Theorem,
+$\bigl(u\,[\tau],u[\tau']\bigr)\in R=\emptyset$,
+which is impossible.
+\end{exmpl}
+The following insight is taken from \citet{wadler1989theorems}.
+\begin{exmpl}
+Assume we are given a polymorphic equality function $\eq : \forall \alpha.\, \alpha\to\alpha\to\bool$.
+Remember that $\vint{\bool}=\{(\true,\true),(\false,\false)\}$.
+Then by the Parametricity Theorem, for any $\tau,\tau',f : \tau\to\tau',v_1 : \tau,v_2 : \tau$, we get
+$\eq\,[\tau]\,v_1\,v_2 \eqnf \eq\,[\tau']\,(f\,v_1)\,(f\,v_2)$.
+However, this should only be the case for injective functions $f$ and not in general.
+Hence, polymorphic equality is undefinable in the System F.
+\end{exmpl}
+As mentioned by \citet{wadler1989theorems},
+this example motivates the introduction of restricted type quantification.
+For example, Haskell uses the notion of type classes
+\citep{typeclasses}
+to define its equality function \haskell{(==) :: Eq a => a -> a -> Bool}.
+Thankfully, as already sketched by
+\citet{wadler1989theorems} and finally formalised and proven by \citet{voigtlander2009free},
+the Parametricity Theorem can be adapted to work with type classes\footnote{The basic idea is that the logical relation for type variables restricted by some class constraints only ranges over those types that satisfy the constraints and those relations that preserve the constraints.} and even type constructors.
+
+
+\section{Free Theorems and Beyond}\label{sec:beyond}
+Following Wadler, many authors have taken up the task of extending the
+Parametricity Theorem to other type systems.
+Some notable examples of generalisations and applications of the
+results presented here can be found in the following:
+\begin{itemize}
+\item As already explained by \citet{Reynolds1983TypesAA}, the Parametricity Theorem can be used to show that two implementations of the same abstract data type are observationally equivalent (this is often called \emph{representation independence}).
+\item \citet{wadler1989theorems} showed that the Parametricity Theorem can be adapted to non-total extensions of System F with general recursion,
+though the theorems derived become weaker:
+all relations considered must be strict in the sense that $(\bot,\bot)\in R$.
+In particular, for functional relations, this means that diverging arguments cause diverging results.
+\item The introduction of general recursive types causes problems in the well-foundedness of the logical relation:
+For example, if we naively extend our logical relation to
+cope with the type of boolean lists
+$\listt{\bool}=\mathsf{unit}+\bool\times\listt{\bool}$,
+we end up with the following definition
+$\vint{\listt{\bool}}_\rho=\vint{\mathsf{unit}}_\rho\cup\vint{\bool\times\listt{\bool}}_\rho$,
+leading to a circularity.
+The solution to this issue was given by
+\citet{10.1145/504709.504712} and nowadays known as \emph{step-indexing}:
+the logical relation is not just indexed by types anymore
+but also by the number of reduction steps we allow ourselves to perform on
+terms and applications of values.
+\item As mentioned in \cref{sec:noundef}, \citet{voigtlander2009free} extended the Parametricity Theorem to type classes and type constructors.
+\item \citet{bernardy2012proofs} generalised the parametricity results to pure type systems and its extension with inductive types (and hence in particular to dependent type systems).
+\item \citet{ahmed2017theorems} showed that gradually typed languages preserve some parametricity results.
+\item On the more practical side, various tactics for interactive theorem provers have been developed to automatically derive free theorems from given user definitions \citep{huffman2013lifting,tabareau2021marriage}.
+\item The ongoing \href{https://iris-project.org/}{Iris-project} \citep{jung2018iris} is a verification framework that provides mechanisms to work with logical relations on higher-order languages with mutable state.
+\end{itemize}
+We want to conclude the paper by answering a question posed by Wadler in his seminal paper:
+\begin{quote}
+How useful are the [free] theorems so generated? Only time and experience will tell\dots
+\end{quote}
+Nearly 32 years later, I allow myself to reply positively:
+the idea of free theorems kicked off much fruitful research and their results can indeed be very useful in formal verification.
+
+\newpage
+\bibliographystyle{plainnat}
+\bibliography{sources}
+\end{document}
+
